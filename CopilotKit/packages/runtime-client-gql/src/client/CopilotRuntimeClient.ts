@@ -20,8 +20,9 @@ import {
 
 /**
  * Helper function to resolve headers from either a static object or a function.
+ * Exported for testing purposes.
  */
-async function resolveHeaders(headers?: HeadersInit): Promise<Record<string, string>> {
+export async function resolveHeaders(headers?: HeadersInit): Promise<Record<string, string>> {
   if (!headers) {
     return {};
   }

@@ -1,31 +1,13 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { resolveHeaders } from "./CopilotRuntimeClient";
+import { HeadersInit } from "@copilotkit/shared";
 
 /**
  * Test suite for dynamic headers functionality in CopilotRuntimeClient.
  *
  * This tests the `resolveHeaders` helper function and header merging behavior
- * in the `createFetchFn` factory function. Since these are internal functions,
- * we extract and test the core logic separately.
+ * in the `createFetchFn` factory function.
  */
-
-// Type definition matching the one in CopilotRuntimeClient.ts
-type HeadersInit =
-  | Record<string, string>
-  | (() => Record<string, string> | Promise<Record<string, string>>);
-
-/**
- * Helper function to resolve headers from either a static object or a function.
- * This is a copy of the function from CopilotRuntimeClient.ts for testing.
- */
-async function resolveHeaders(headers?: HeadersInit): Promise<Record<string, string>> {
-  if (!headers) {
-    return {};
-  }
-  if (typeof headers === "function") {
-    return await headers();
-  }
-  return headers;
-}
 
 describe("CopilotRuntimeClient - Dynamic Headers", () => {
   describe("resolveHeaders", () => {
