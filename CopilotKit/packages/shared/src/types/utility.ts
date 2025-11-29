@@ -5,6 +5,6 @@ export type RequiredBy<T, K extends keyof T> = T & { [P in K]-?: T[P] };
  * Type for headers that can be either a static object or a function that returns headers.
  * The function can be sync or async, allowing for dynamic header generation (e.g., refreshing auth tokens).
  */
-export type HeadersInit =
+export type CopilotHeadersInit =
   | Record<string, string>
   | (() => Record<string, string> | Promise<Record<string, string>>);
