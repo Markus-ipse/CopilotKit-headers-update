@@ -8,3 +8,8 @@ export type RequiredBy<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 export type CopilotHeadersInit =
   | Record<string, string>
   | (() => Record<string, string> | Promise<Record<string, string>>);
+
+/**
+ * Alias for CopilotHeadersInit for backward compatibility.
+ */
+export type HeadersInit = CopilotHeadersInit;
