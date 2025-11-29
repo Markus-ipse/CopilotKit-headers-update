@@ -15,15 +15,47 @@ import {
   CopilotKitError,
   CopilotKitVersionMismatchError,
   getPossibleVersionMismatch,
+  HeadersInit,
 } from "@copilotkit/shared";
 
+/**
+ * Helper function to resolve headers from either a static object or a function.
+ */
+async function resolveHeaders(headers?: HeadersInit): Promise<Record<string, string>> {
+  if (!headers) {
+    return {};
+  }
+  if (typeof headers === "function") {
+    return await headers();
+  }
+  return headers;
+}
+
 const createFetchFn =
-  (signal?: AbortSignal, handleGQLWarning?: (warning: string) => void) =>
+  (
+    signal?: AbortSignal,
+    handleGQLWarning?: (warning: string) => void,
+    dynamicHeaders?: HeadersInit,
+  ) =>
   async (...args: Parameters<typeof fetch>) => {
-    // @ts-expect-error -- since this is our own header, TS will not recognize
-    const publicApiKey = args[1]?.headers?.["x-copilotcloud-public-api-key"];
+    // Resolve dynamic headers before each request
+    const resolvedHeaders = await resolveHeaders(dynamicHeaders);
+
+    // Merge dynamic headers with existing headers from args
+    const existingHeaders = (args[1]?.headers as Record<string, string>) || {};
+    const mergedHeaders = {
+      ...existingHeaders,
+      ...resolvedHeaders,
+    };
+
+    const publicApiKey = mergedHeaders["x-copilotcloud-public-api-key"];
+
     try {
-      const result = await fetch(args[0], { ...(args[1] ?? {}), signal });
+      const result = await fetch(args[0], {
+        ...(args[1] ?? {}),
+        headers: mergedHeaders,
+        signal,
+      });
 
       // No mismatch checking if cloud is being used
       const mismatch = publicApiKey
@@ -65,7 +97,7 @@ const createFetchFn =
 export interface CopilotRuntimeClientOptions {
   url: string;
   publicApiKey?: string;
-  headers?: Record<string, string>;
+  headers?: HeadersInit;
   credentials?: RequestCredentials;
   handleGQLErrors?: (error: Error) => void;
   handleGQLWarning?: (warning: string) => void;
@@ -75,29 +107,30 @@ export class CopilotRuntimeClient {
   client: Client;
   public handleGQLErrors?: (error: Error) => void;
   public handleGQLWarning?: (warning: string) => void;
+  private headers?: HeadersInit;
+  private publicApiKey?: string;
 
   constructor(options: CopilotRuntimeClientOptions) {
-    const headers: Record<string, string> = {};
-
     this.handleGQLErrors = options.handleGQLErrors;
     this.handleGQLWarning = options.handleGQLWarning;
+    this.headers = options.headers;
+    this.publicApiKey = options.publicApiKey;
 
-    if (options.headers) {
-      Object.assign(headers, options.headers);
-    }
+    // Build static headers for the URQL client
+    // Dynamic headers will be resolved in createFetchFn for each request
+    const staticHeaders: Record<string, string> = {
+      "X-CopilotKit-Runtime-Client-GQL-Version": packageJson.version,
+    };
 
     if (options.publicApiKey) {
-      headers["x-copilotcloud-public-api-key"] = options.publicApiKey;
+      staticHeaders["x-copilotcloud-public-api-key"] = options.publicApiKey;
     }
 
     this.client = new Client({
       url: options.url,
       exchanges: [cacheExchange, fetchExchange],
       fetchOptions: {
-        headers: {
-          ...headers,
-          "X-CopilotKit-Runtime-Client-GQL-Version": packageJson.version,
-        },
+        headers: staticHeaders,
         ...(options.credentials ? { credentials: options.credentials } : {}),
       },
     });
@@ -112,7 +145,7 @@ export class CopilotRuntimeClient {
     properties?: GenerateCopilotResponseMutationVariables["properties"];
     signal?: AbortSignal;
   }) {
-    const fetchFn = createFetchFn(signal, this.handleGQLWarning);
+    const fetchFn = createFetchFn(signal, this.handleGQLWarning, this.headers);
     const result = this.client.mutation<
       GenerateCopilotResponseMutation,
       GenerateCopilotResponseMutationVariables
@@ -174,12 +207,12 @@ export class CopilotRuntimeClient {
   }
 
   availableAgents() {
-    const fetchFn = createFetchFn();
+    const fetchFn = createFetchFn(undefined, this.handleGQLWarning, this.headers);
     return this.client.query<AvailableAgentsQuery>(getAvailableAgentsQuery, {}, { fetch: fetchFn });
   }
 
   loadAgentState(data: { threadId: string; agentName: string }) {
-    const fetchFn = createFetchFn();
+    const fetchFn = createFetchFn(undefined, this.handleGQLWarning, this.headers);
     const result = this.client.query<LoadAgentStateQuery>(
       loadAgentStateQuery,
       { data },

@@ -1,7 +1,7 @@
 import { ForwardedParametersInput } from "@copilotkit/runtime-client-gql";
 import { ReactNode } from "react";
 import { AuthState } from "../../context/copilot-context";
-import { CopilotErrorHandler } from "@copilotkit/shared";
+import { CopilotErrorHandler, HeadersInit } from "@copilotkit/shared";
 /**
  * Props for CopilotKit.
  */
@@ -58,15 +58,22 @@ export interface CopilotKitProps {
 
   /**
    * Additional headers to be sent with the request.
+   * Can be a static object or a function that returns headers (sync or async).
+   * When a function is provided, it will be called before each request, allowing for dynamic headers like refreshing auth tokens.
    *
-   * For example:
-   * ```json
-   * {
-   *   "Authorization": "Bearer X"
-   * }
-   * ```
+   * @example
+   * // Static headers
+   * headers={{ "Authorization": "Bearer X" }}
+   *
+   * @example
+   * // Dynamic headers (sync)
+   * headers={() => ({ "Authorization": `Bearer ${getToken()}` })}
+   *
+   * @example
+   * // Dynamic headers (async)
+   * headers={async () => ({ "Authorization": `Bearer ${await refreshToken()}` })}
    */
-  headers?: Record<string, string>;
+  headers?: HeadersInit;
 
   /**
    * The children to be rendered within the CopilotKit.

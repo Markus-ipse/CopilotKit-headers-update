@@ -3,6 +3,7 @@ import {
   FunctionCallHandler,
   CopilotErrorHandler,
   CopilotKitError,
+  HeadersInit,
 } from "@copilotkit/shared";
 import {
   ActionRenderProps,
@@ -57,7 +58,8 @@ export interface CopilotApiConfig {
   textToSpeechUrl?: string;
 
   /**
-   * additional headers to be sent with the request
+   * Additional headers to be sent with the request.
+   * Can be a static object or a function that returns headers (sync or async).
    * @default {}
    * @example
    * ```
@@ -65,8 +67,12 @@ export interface CopilotApiConfig {
    *   'Authorization': 'Bearer your_token_here'
    * }
    * ```
+   * @example
+   * ```
+   * () => ({ 'Authorization': `Bearer ${getToken()}` })
+   * ```
    */
-  headers: Record<string, string>;
+  headers: HeadersInit;
 
   /**
    * Custom properties to be sent with the request

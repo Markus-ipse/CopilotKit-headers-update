@@ -36,6 +36,7 @@ import {
   CopilotKitError,
   CopilotErrorEvent,
   CopilotErrorHandler,
+  HeadersInit,
 } from "@copilotkit/shared";
 import { FrontendAction } from "../../types/frontend-action";
 import useFlatCategoryStore from "../../hooks/use-flat-category-store";
@@ -227,7 +228,7 @@ export function CopilotKitInternal(cpkProps: CopilotKitProps) {
       publicApiKey: publicApiKey,
       ...(cloud ? { cloud } : {}),
       chatApiEndpoint: chatApiEndpoint,
-      headers: props.headers || {},
+      headers: props.headers ?? {},
       properties: props.properties || {},
       transcribeAudioUrl: props.transcribeAudioUrl,
       textToSpeechUrl: props.textToSpeechUrl,
@@ -244,29 +245,50 @@ export function CopilotKitInternal(cpkProps: CopilotKitProps) {
     props.guardrails_c,
   ]);
 
-  const headers = useMemo(() => {
-    const authHeaders = Object.values(authStates || {}).reduce((acc, state) => {
-      if (state.status === "authenticated" && state.authHeaders) {
-        return {
-          ...acc,
-          ...Object.entries(state.authHeaders).reduce(
-            (headers, [key, value]) => ({
-              ...headers,
-              [key.startsWith("X-Custom-") ? key : `X-Custom-${key}`]: value,
-            }),
-            {},
-          ),
-        };
-      }
-      return acc;
-    }, {});
+  const headers: HeadersInit = useMemo(() => {
+    // Build additional headers that should be merged
+    const authHeaders = Object.values(authStates || {}).reduce<Record<string, string>>(
+      (acc, state) => {
+        if (state.status === "authenticated" && state.authHeaders) {
+          return {
+            ...acc,
+            ...Object.entries(state.authHeaders).reduce(
+              (headers, [key, value]) => ({
+                ...headers,
+                [key.startsWith("X-Custom-") ? key : `X-Custom-${key}`]: value,
+              }),
+              {},
+            ),
+          };
+        }
+        return acc;
+      },
+      {},
+    );
 
-    return {
-      ...(copilotApiConfig.headers || {}),
+    const additionalHeaders: Record<string, string> = {
       ...(copilotApiConfig.publicApiKey
         ? { [COPILOT_CLOUD_PUBLIC_API_KEY_HEADER]: copilotApiConfig.publicApiKey }
         : {}),
       ...authHeaders,
+    };
+
+    // If headers is a function, create a wrapper that merges additional headers
+    if (typeof copilotApiConfig.headers === "function") {
+      const originalHeadersFn = copilotApiConfig.headers;
+      return async () => {
+        const resolvedHeaders = await originalHeadersFn();
+        return {
+          ...resolvedHeaders,
+          ...additionalHeaders,
+        };
+      };
+    }
+
+    // If headers is a static object, merge directly
+    return {
+      ...(copilotApiConfig.headers || {}),
+      ...additionalHeaders,
     };
   }, [copilotApiConfig.headers, copilotApiConfig.publicApiKey, authStates]);
 
