@@ -229,7 +229,7 @@ export function CopilotKitInternal(cpkProps: CopilotKitProps) {
       ...(cloud ? { cloud } : {}),
       chatApiEndpoint: chatApiEndpoint,
       headers: props.headers ?? {},
-      properties: props.properties || {},
+      properties: props.properties ?? {},
       transcribeAudioUrl: props.transcribeAudioUrl,
       textToSpeechUrl: props.textToSpeechUrl,
       credentials: props.credentials,
