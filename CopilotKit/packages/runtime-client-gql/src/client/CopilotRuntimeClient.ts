@@ -44,8 +44,8 @@ const createFetchFn =
     // Merge dynamic headers with existing headers from args
     const existingHeaders = (args[1]?.headers as Record<string, string>) || {};
     const mergedHeaders = {
-      ...existingHeaders,
       ...resolvedHeaders,
+      ...existingHeaders, // existingHeaders should have higher priority
     };
 
     const publicApiKey = mergedHeaders["x-copilotcloud-public-api-key"];
