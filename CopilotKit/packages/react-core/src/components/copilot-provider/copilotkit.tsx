@@ -275,8 +275,8 @@ export function CopilotKitInternal(cpkProps: CopilotKitProps) {
       return async () => {
         const resolvedHeaders = await originalHeadersFn();
         return {
-          ...resolvedHeaders,
           ...additionalHeaders,
+          ...resolvedHeaders,
         };
       };
     }
