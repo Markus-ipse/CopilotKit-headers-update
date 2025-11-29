@@ -246,25 +246,21 @@ export function CopilotKitInternal(cpkProps: CopilotKitProps) {
   ]);
 
   const headers: HeadersInit = useMemo(() => {
-    // Build additional headers that should be merged
-    const authHeaders = Object.values(authStates || {}).reduce<Record<string, string>>(
-      (acc, state) => {
-        if (state.status === "authenticated" && state.authHeaders) {
-          return {
-            ...acc,
-            ...Object.entries(state.authHeaders).reduce(
-              (headers, [key, value]) => ({
-                ...headers,
-                [key.startsWith("X-Custom-") ? key : `X-Custom-${key}`]: value,
-              }),
-              {},
-            ),
-          };
-        }
-        return acc;
-      },
-      {},
-    );
+    const authHeaders = Object.values(authStates || {}).reduce<Record<string, string>>((acc, state) => {
+      if (state.status === "authenticated" && state.authHeaders) {
+        return {
+          ...acc,
+          ...Object.entries(state.authHeaders).reduce(
+            (headers, [key, value]) => ({
+              ...headers,
+              [key.startsWith("X-Custom-") ? key : `X-Custom-${key}`]: value,
+            }),
+            {},
+          ),
+        };
+      }
+      return acc;
+    }, {});
 
     const additionalHeaders: Record<string, string> = {
       ...(copilotApiConfig.publicApiKey

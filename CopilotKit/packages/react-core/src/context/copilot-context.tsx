@@ -58,7 +58,7 @@ export interface CopilotApiConfig {
   textToSpeechUrl?: string;
 
   /**
-   * Additional headers to be sent with the request.
+   * additional headers to be sent with the request.
    * Can be a static object or a function that returns headers (sync or async).
    * @default {}
    * @example
